@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "993675576502",
+    "firebase_url": "https://tunerun-151319.firebaseio.com",
+    "project_id": "tunerun-151319",
+    "storage_bucket": "tunerun-151319.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:993675576502:android:326e7da1b5dc171c",
+        "android_client_info": {
+          "package_name": "com.vitorarrais.tunerun"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "993675576502-aj0a8qcicarafsgc1nlkj3jb9gq4fn3k.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.vitorarrais.tunerun",
+            "certificate_hash": "3367DBAE81B3D6C8B58969C1215E9D0A38A8DC8D"
+          }
+        },
+        {
+          "client_id": "993675576502-hl6lsgculau583anhvr3dmu56sf63udq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDLaH1ZxlrayuEwj5dMoZtSh7ag06EYnck"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 2,
+          "other_platform_oauth_client": [
+            {
+              "client_id": "993675576502-hl6lsgculau583anhvr3dmu56sf63udq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
