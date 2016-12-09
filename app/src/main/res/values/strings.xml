@@ -20,4 +20,6 @@
     <string name="spotify_login_loader_message">Waiting for listening to music</string>
     <string name="finish_string">Finish</string>
     <string name="start_string">Start</string>
+    <string name="play_button">Play</string>
+
 </resources>

@@ -35,6 +35,7 @@ public class HistoryActivity extends AppCompatActivity implements
         LoaderManager.LoaderCallbacks<Cursor> {
 
     public static String PATH = "path";
+    public static String EXTRA_USER_ID = "userId";
 
     private Toolbar mToolbar;
 
@@ -55,10 +56,10 @@ public class HistoryActivity extends AppCompatActivity implements
         setContentView(R.layout.activity_history);
         ButterKnife.bind(this);
 
-        mCurrentUserId = getIntent().getStringExtra("userId");
+        mCurrentUserId = getIntent().getStringExtra(EXTRA_USER_ID);
 
         mDatabase = FirebaseDatabase.getInstance();
-        mHistoryRef = mDatabase.getReference("history");
+        mHistoryRef = mDatabase.getReference(getResources().getString(R.string.history_ref));
 
         mToolbar = (Toolbar) findViewById(R.id.toolbar); // Attaching the layout to the toolbar object
         setSupportActionBar(mToolbar);
@@ -101,7 +102,6 @@ public class HistoryActivity extends AppCompatActivity implements
         mHistoryListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int i, long l) {
-                //Toast.makeText(HistoryActivity.this, "ID: "+l, Toast.LENGTH_SHORT).show();
                 retrieveDataById(l);
             }
         });
@@ -119,7 +119,7 @@ public class HistoryActivity extends AppCompatActivity implements
     }
 
 
-    private class retrieveDataTask extends AsyncTask<Call<HistoryModel>, Void, HistoryModel>{
+    private class retrieveDataTask extends AsyncTask<Call<HistoryModel>, Void, HistoryModel> {
 
 
         @Override
@@ -139,7 +139,7 @@ public class HistoryActivity extends AppCompatActivity implements
         protected void onPostExecute(HistoryModel result) {
             Intent i = new Intent(HistoryActivity.this, HistoryMapActivity.class);
             ArrayList<LocationModel> path;
-            if (result.getPath()!=null && !result.getPath().isEmpty()){
+            if (result.getPath() != null && !result.getPath().isEmpty()) {
                 path = (ArrayList<LocationModel>) result.getPath();
                 i.putParcelableArrayListExtra(PATH, path);
             }

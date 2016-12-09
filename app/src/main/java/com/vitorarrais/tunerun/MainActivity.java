@@ -71,14 +71,6 @@ public class MainActivity extends AppCompatActivity implements
         SpotifyPlayer.NotificationCallback, ConnectionStateCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
 
-    // TODO: Replace with your client ID
-    private static final String CLIENT_ID = "fb9e34c2d44a4a28b793c6589a0d816b";
-    // TODO: Replace with your redirect URI
-    private static final String REDIRECT_URI = "com-vitorarrais-tunerun://callback";
-
-    private Player mPlayer;
-    private LocationRequest mLocationRequest;
-
     // Request code that will be used to verify if the result comes from correct activity
     // Can be any integer
     private static final int REQUEST_CODE = 1337;
@@ -92,15 +84,20 @@ public class MainActivity extends AppCompatActivity implements
 
     private static final double LIMIT_VELOCITY = 3.8 * 1d; // meters per second
     private static final long SPEED_UPDATE_PERIOD = 5000; // milliseconds
-
     private static final long ACTIVITY_MIN_DURATION = 60; // seconds
     private static final long ACTIVITY_MIN_DISTANCE = 50; // meters
 
     public static final int RC_SIGN_IN = 1;
 
+    
+    private String mLowSpeedPlaylist;
+    private String mHighSpeedPlaylist;
+    private Player mPlayer;
+    private LocationRequest mLocationRequest;
     private Boolean mRequestingLocationUpdates = false;
     private Toolbar mToolbar;
 
+    
     @BindView(R.id.start_button)
     protected LinearLayout mPlayButton;
     @BindView(R.id.play_text)
@@ -159,6 +156,9 @@ public class MainActivity extends AppCompatActivity implements
         mProgressDialog.setMessage(getResources().getString(R.string.spotify_login_loader_message));
         mProgressDialog.setCancelable(false);
 
+        mHighSpeedPlaylist = getResources().getString(R.string.high_playlist_uri);
+        mLowSpeedPlaylist = getResources().getString(R.string.low_playlist_uri);
+
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseAuth = FirebaseAuth.getInstance();
 
@@ -184,7 +184,9 @@ public class MainActivity extends AppCompatActivity implements
                 FirebaseUser user = firebaseAuth.getCurrentUser();
                 if (user != null) {
                     mCurrentUserId = user.getUid();
-                    mHistoryDatabaseReference = mFirebaseDatabase.getReference().child(mCurrentUserId).child("history");
+                    mHistoryDatabaseReference = mFirebaseDatabase.getReference()
+                            .child(mCurrentUserId)
+                            .child(getResources().getString(R.string.history_ref));
 
                     // signed in
                 } else {
@@ -254,7 +256,7 @@ public class MainActivity extends AppCompatActivity implements
 
         if (id == R.id.action_history) {
             Intent i = new Intent(this, HistoryActivity.class);
-            i.putExtra("userId", mCurrentUserId);
+            i.putExtra(HistoryActivity.EXTRA_USER_ID, mCurrentUserId);
             startActivity(i);
             return true;
         }
@@ -302,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements
         if (requestCode == REQUEST_CODE) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
-                Config playerConfig = new Config(this, response.getAccessToken(), CLIENT_ID);
+                Config playerConfig = new Config(this, response.getAccessToken(), getResources().getString(R.string.client_id));
                 Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
                     @Override
                     public void onInitialized(SpotifyPlayer spotifyPlayer) {
@@ -314,8 +316,8 @@ public class MainActivity extends AppCompatActivity implements
 
                     @Override
                     public void onError(Throwable throwable) {
-                        Log.e("MainActivity", "Could not initialize player: " + throwable.getMessage());
-                        Toast.makeText(MainActivity.this, "Sorry, Spotify login has failed", Toast.LENGTH_SHORT).show();
+                        Log.e(MainActivity.class.getSimpleName(), "Could not initialize player: " + throwable.getMessage());
+                        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_login_spotify), Toast.LENGTH_SHORT).show();
                         mProgressDialog.dismiss();
 
                     }
@@ -334,7 +336,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onPlaybackEvent(PlayerEvent playerEvent) {
-        Log.d("MainActivity", "Playback event received: " + playerEvent.name());
+        Log.d(MainActivity.class.getSimpleName(), "Playback event received: " + playerEvent.name());
         switch (playerEvent.name()) {
             // Handle event type as necessary
             case "kSpPlaybackNotifyTrackChanged":
@@ -365,8 +367,8 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onPlaybackError(Error error) {
-        Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
-        Log.d("MainActivity", "Playback error received: " + error.name());
+        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
+        Log.d(MainActivity.class.getSimpleName(), "Playback error received: " + error.name());
         switch (error) {
             // Handle error type as necessary
             default:
@@ -376,31 +378,31 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onLoggedIn() {
-        Log.d("MainActivity", "User logged in");
+        Log.d(MainActivity.class.getSimpleName(), "User logged in");
         Toast.makeText(this, "User logged in", Toast.LENGTH_SHORT).show();
 //        mPlayer.playUri(null, "spotify:track:2TpxZ7JUBn3uw46aR7qd6V", 0, 0);
     }
 
     @Override
     public void onLoggedOut() {
-        Log.d("MainActivity", "User logged out");
+        Log.d(MainActivity.class.getSimpleName(), "User logged out");
     }
 
     @Override
     public void onLoginFailed(int i) {
-        Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
-        Log.d("MainActivity", "Login failed");
+        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
+        Log.d(MainActivity.class.getSimpleName(), "Login failed");
     }
 
     @Override
     public void onTemporaryError() {
-        Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
-        Log.d("MainActivity", "Temporary error occurred");
+        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
+        Log.d(MainActivity.class.getSimpleName(), "Temporary error occurred");
     }
 
     @Override
     public void onConnectionMessage(String message) {
-        Log.d("MainActivity", "Received connection message: " + message);
+        Log.d(MainActivity.class.getSimpleName(), "Received connection message: " + message);
     }
 
     @OnClick(R.id.start_button)
@@ -417,7 +419,7 @@ public class MainActivity extends AppCompatActivity implements
 
             if (!isPlaying) {
 
-                mPlayer.playUri(null, "spotify:user:spotifybrazilian:playlist:7xchkWJJELTYDBzffZygz0", 0, 0);
+                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
 
 
                 mPlayText.setText(getResources().getString(R.string.finish_string));
@@ -437,7 +439,7 @@ public class MainActivity extends AppCompatActivity implements
 
                     @Override
                     public void onError(Error error) {
-                        Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
                     }
                 });
 
@@ -479,9 +481,9 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void requestSpotifyLogin() {
-        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(getResources().getString(R.string.client_id),
                 AuthenticationResponse.Type.TOKEN,
-                REDIRECT_URI);
+                getResources().getString(R.string.redirect_uri));
         builder.setScopes(new String[]{"user-read-private", "streaming"});
         AuthenticationRequest request = builder.build();
 
@@ -495,15 +497,14 @@ public class MainActivity extends AppCompatActivity implements
             mPlayer.pause(new Player.OperationCallback() {
                 @Override
                 public void onSuccess() {
-                    //Toast.makeText(MainActivity.this, "Paused", Toast.LENGTH_SHORT).show();
                 }
 
                 @Override
                 public void onError(Error error) {
-                    Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
                 }
             });
-            mPauseButton.setText("Play");
+            mPauseButton.setText(getResources().getString(R.string.play_button));
         } else if (mPlayer != null && mPlayer.getPlaybackState().isActiveDevice) {
             mPlayer.resume(new Player.OperationCallback() {
                 @Override
@@ -513,10 +514,10 @@ public class MainActivity extends AppCompatActivity implements
 
                 @Override
                 public void onError(Error error) {
-                    Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
                 }
             });
-            mPauseButton.setText("Pause");
+            mPauseButton.setText(getResources().getString(R.string.pause));
         }
     }
 
@@ -532,7 +533,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 @Override
                 public void onError(Error error) {
-                    Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -550,7 +551,7 @@ public class MainActivity extends AppCompatActivity implements
 
                 @Override
                 public void onError(Error error) {
-                    Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
                 }
             });
         }
@@ -654,7 +655,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onConnectionFailed(@NonNull ConnectionResult connectionResult) {
-        Toast.makeText(MainActivity.this, "Sorry, an error has ocurried", Toast.LENGTH_SHORT).show();
+        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
     }
 
     @Override
@@ -690,17 +691,13 @@ public class MainActivity extends AppCompatActivity implements
             long deltaTime = difference;
 
             mSpeed = deltaDistance / (double) (deltaTime * 1000d);
-            Log.d(MainActivity.class.getSimpleName(), "Speed: " + mSpeed + " State: " + mSpeedState);
-
 
             if (mSpeed > LIMIT_VELOCITY && mSpeedState == SpeedState.LOW) {
                 mSpeedState = SpeedState.HIGH;
-                Log.d(MainActivity.class.getSimpleName(), "turned to HIGH velocity");
-                mPlayer.playUri(null, "spotify:user:sonymusicentertainment:playlist:5GiPRvTccToqwOzkoAcDrY", 0, 0);
+                mPlayer.playUri(null, mHighSpeedPlaylist, 0, 0);
             } else if (mSpeed < LIMIT_VELOCITY && mSpeedState == SpeedState.HIGH) {
                 mSpeedState = SpeedState.LOW;
-                mPlayer.playUri(null, "spotify:user:spotifybrazilian:playlist:7xchkWJJELTYDBzffZygz0", 0, 0);
-                Log.d(MainActivity.class.getSimpleName(), "turned to LOW velocity");
+                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
             }
         }
 

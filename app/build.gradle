@@ -1,6 +1,19 @@
 apply plugin: 'com.android.application'
 
+// Load keystore
+def keystorePropertiesFile = rootProject.file("keystore.properties");
+def keystoreProperties = new Properties()
+keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+
 android {
+    signingConfigs {
+        config {
+            keyAlias 'tunerun'
+            keyPassword 'vitorarrais'
+            storeFile file("$rootDir/keystore.jks")
+            storePassword 'vitorarrais'
+        }
+    }
     compileSdkVersion 25
     buildToolsVersion "25.0.0"
     defaultConfig {
@@ -15,6 +28,9 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.config
+        }
+        debug {
         }
     }
 }
@@ -40,13 +56,10 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile project(':spotify-auth-beta23-noconnect-2.20b')
     compile project(':spotify-player-beta23-noconnect-2.20b')
-
     compile 'com.google.firebase:firebase-core:9.6.1'
     compile 'com.google.firebase:firebase-database:9.6.1'
     compile 'com.google.firebase:firebase-auth:9.6.1'
-
     compile 'com.firebaseui:firebase-ui-auth:0.6.1'
-
     compile 'com.squareup.retrofit2:retrofit:2.0.2'
     compile 'com.squareup.retrofit2:converter-gson:2.0.2'
 }
