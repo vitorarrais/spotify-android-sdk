@@ -1,1 +1,2 @@
-# Capstone-Project
+# Example usage of Spotify Android SDK
+
