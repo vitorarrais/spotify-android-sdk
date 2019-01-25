@@ -3,9 +3,9 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/spotify-android-sdk.iml" filepath="$PROJECT_DIR$/spotify-android-sdk.iml" />
       <module fileurl="file://$PROJECT_DIR$/spotify-auth-beta23-noconnect-2.20b/spotify-auth-beta23-noconnect-2.20b.iml" filepath="$PROJECT_DIR$/spotify-auth-beta23-noconnect-2.20b/spotify-auth-beta23-noconnect-2.20b.iml" />
       <module fileurl="file://$PROJECT_DIR$/spotify-player-beta23-noconnect-2.20b/spotify-player-beta23-noconnect-2.20b.iml" filepath="$PROJECT_DIR$/spotify-player-beta23-noconnect-2.20b/spotify-player-beta23-noconnect-2.20b.iml" />
-      <module fileurl="file://$PROJECT_DIR$/tunerun.iml" filepath="$PROJECT_DIR$/tunerun.iml" />
     </modules>
   </component>
 </project>

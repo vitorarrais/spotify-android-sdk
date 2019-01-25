@@ -15,7 +15,6 @@ android {
         }
     }
     compileSdkVersion 25
-    buildToolsVersion "25.0.0"
     defaultConfig {
         applicationId "com.vitorarrais.tunerun"
         minSdkVersion 22
@@ -36,6 +35,8 @@ android {
 }
 
 repositories {
+    google()
+    jcenter()
     mavenCentral()
     flatDir {
         dirs 'libs'
