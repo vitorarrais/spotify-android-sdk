@@ -2,7 +2,6 @@
 <resources>
     <string name="high_playlist_uri">spotify:user:sonymusicentertainment:playlist:5GiPRvTccToqwOzkoAcDrY</string>
     <string name="low_playlist_uri">spotify:user:spotifybrazilian:playlist:7xchkWJJELTYDBzffZygz0</string>
-    <string name="client_id">fb9e34c2d44a4a28b793c6589a0d816b</string>
     <string name="redirect_uri">com-vitorarrais-tunerun://callback</string>
 
 </resources>

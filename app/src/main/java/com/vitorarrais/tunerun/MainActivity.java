@@ -304,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements
         if (requestCode == REQUEST_CODE) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
-                Config playerConfig = new Config(this, response.getAccessToken(), getResources().getString(R.string.client_id));
+                Config playerConfig = new Config(this, response.getAccessToken(), BuildConfig.SpotifySdkClientId);
                 Spotify.getPlayer(playerConfig, this, new SpotifyPlayer.InitializationObserver() {
                     @Override
                     public void onInitialized(SpotifyPlayer spotifyPlayer) {
@@ -481,7 +481,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void requestSpotifyLogin() {
-        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(getResources().getString(R.string.client_id),
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(BuildConfig.SpotifySdkClientId,
                 AuthenticationResponse.Type.TOKEN,
                 getResources().getString(R.string.redirect_uri));
         builder.setScopes(new String[]{"user-read-private", "streaming"});

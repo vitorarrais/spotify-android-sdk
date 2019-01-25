@@ -1,17 +1,17 @@
 apply plugin: 'com.android.application'
 
 // Load keystore
-def keystorePropertiesFile = rootProject.file("keystore.properties");
+def keystorePropertiesFile = rootProject.file("keystore.properties")
 def keystoreProperties = new Properties()
 keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 
 android {
     signingConfigs {
         config {
-            keyAlias 'tunerun'
-            keyPassword 'vitorarrais'
+            keyAlias keystoreProperties.keyAlias
+            keyPassword keystoreProperties.keyPassword
             storeFile file("$rootDir/keystore.jks")
-            storePassword 'vitorarrais'
+            storePassword keystoreProperties.storePassword
         }
     }
     compileSdkVersion 25
@@ -27,9 +27,13 @@ android {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            buildConfigField 'String', 'SpotifySdkClientId', SpotifySdkClientId
+            resValue 'string', 'spotify_sdk_cliend_id', SpotifySdkClientId
             signingConfig signingConfigs.config
         }
         debug {
+            buildConfigField 'String', 'SpotifySdkClientId', SpotifySdkClientId
+            resValue 'string', 'spotify_sdk_cliend_id', SpotifySdkClientId
         }
     }
 }
