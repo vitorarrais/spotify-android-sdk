@@ -24,3 +24,4 @@ People that love to run and listen to music at the same time
    - Uses ORMLite for data persistence
    - Uses Picasso library for loading images
    - Uses Spotify Android SDK for music streaming
+   - Uses Firebase Auth for authentication
