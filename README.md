@@ -14,11 +14,11 @@ People that love to run and listen to music at the same time
 
 ## User Interface Mocks
 
-![alt text](http://github.com/vitorarrais/spotify-android-sdk/blob/master/images/screen1.png "Screen 1")
+![Alt text](/images/screen1.png?raw=true "Screen 1")
 
-![alt text](http://github.com/vitorarrais/spotify-android-sdk/tree/master/images/screen2.png "Screen 2")
+![Alt text](/images/screen2.png?raw=true "Screen 2")
 
-![alt text](http://github.com/vitorarrais/spotify-android-sdk/tree/master/images/screen3.png "Screen 3")
+![Alt text](/images/screen3.png?raw=true "Screen 3")
 
 ## Key Considerations
    - Uses ORMLite for data persistence
