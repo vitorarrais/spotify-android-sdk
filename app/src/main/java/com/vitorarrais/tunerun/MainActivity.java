@@ -1,6 +1,7 @@
 package com.vitorarrais.tunerun;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -8,6 +9,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.media.AudioManager;
+import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -54,6 +57,7 @@ import com.vitorarrais.tunerun.data.HistoryTable;
 import com.vitorarrais.tunerun.data.model.HistoryModel;
 import com.vitorarrais.tunerun.data.model.LocationModel;
 
+import java.io.IOException;
 import java.math.RoundingMode;
 import java.text.DateFormat;
 import java.text.DecimalFormat;
@@ -87,6 +91,8 @@ public class MainActivity extends AppCompatActivity implements
     private static final long ACTIVITY_MIN_DURATION = 60; // seconds
     private static final long ACTIVITY_MIN_DISTANCE = 50; // meters
 
+    private static final String STREAM_URL = "http://192.168.0.3:3000/api/music/ai";
+
     public static final int RC_SIGN_IN = 1;
 
     
@@ -95,7 +101,8 @@ public class MainActivity extends AppCompatActivity implements
     private Player mPlayer;
     private LocationRequest mLocationRequest;
     private Boolean mRequestingLocationUpdates = false;
-    private Toolbar mToolbar;
+    protected Toolbar mToolbar;
+    private MediaPlayer mediaPlayer;
 
     
     @BindView(R.id.start_button)
@@ -145,11 +152,44 @@ public class MainActivity extends AppCompatActivity implements
 
     private ProgressDialog mProgressDialog;
 
+
+    private MediaPlayer.OnPreparedListener onPreparedListener = new MediaPlayer.OnPreparedListener() {
+        @Override
+        public void onPrepared(MediaPlayer mediaPlayer) {
+            Toast.makeText(MainActivity.this, "Prepared", Toast.LENGTH_SHORT).show();
+            mediaPlayer.start();
+        }
+    };
+
+    private MediaPlayer.OnCompletionListener onCompletionListener = new MediaPlayer.OnCompletionListener() {
+        @Override
+        public void onCompletion(MediaPlayer mp) {
+            Toast.makeText(MainActivity.this, "Buffering completed", Toast.LENGTH_SHORT).show();
+            mediaPlayer.stop();
+            mediaPlayer.prepareAsync();
+        }
+    };
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
+
+
+        // setup media player
+        mediaPlayer = new MediaPlayer();
+        mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+        try {
+            mediaPlayer.setDataSource(STREAM_URL);
+        } catch (IOException e) {
+            //todo: make a flag to control the player availability and avoid
+            //todo:    to use the player when it is not properly configured
+            e.printStackTrace();
+        }
+        mediaPlayer.setOnPreparedListener(onPreparedListener);
+        mediaPlayer.setOnCompletionListener(onCompletionListener);
+
 
         mProgressDialog = new ProgressDialog(this);
         mProgressDialog.setTitle(getResources().getString(R.string.spotify_login_loader_title));
@@ -408,76 +448,94 @@ public class MainActivity extends AppCompatActivity implements
     @OnClick(R.id.start_button)
     public void play(View v) {
         v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-
-        if (mPlayer == null) {
-            // user is not logged in spotify
-            mProgressDialog.show();
-            requestSpotifyLogin();
+        if (mediaPlayer.isPlaying()){
+            // transition between started and paused may take several
+            //   seconds and occurs asynchronously. In order to use
+            //   pause is necessary to handle this
+            //mediaPlayer.pause();
+            mediaPlayer.stop();
+            // update UI
+            mPlayerWrapper.setVisibility(View.GONE);
+            mPlayText.setText(getResources().getString(R.string.start_string));
+            mPlayButton.setBackgroundColor(getResources().getColor(R.color.green));
+            mDistanceWrapper.setVisibility(View.GONE);
         } else {
 
-            Boolean isPlaying = mPlayer.getPlaybackState().isPlaying;
-
-            if (!isPlaying) {
-
-                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
-
-
-                mPlayText.setText(getResources().getString(R.string.finish_string));
-                mPlayerWrapper.setVisibility(View.VISIBLE);
-                mPlayButton.setBackgroundColor(getResources().getColor(R.color.red));
-                mDistanceWrapper.setVisibility(View.VISIBLE);
-
-                startLocationUpdates();
-            } else {
-                // finish tracking
-
-                mPlayer.pause(new Player.OperationCallback() {
-                    @Override
-                    public void onSuccess() {
-                        //Toast.makeText(MainActivity.this, "Pause success", Toast.LENGTH_SHORT).show();
-                    }
-
-                    @Override
-                    public void onError(Error error) {
-                        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
-                    }
-                });
-
-                mPlayerWrapper.setVisibility(View.GONE);
-                mPlayText.setText(getResources().getString(R.string.start_string));
-                mPlayButton.setBackgroundColor(getResources().getColor(R.color.green));
-                mDistanceWrapper.setVisibility(View.GONE);
-
-                SimpleDateFormat spf = new SimpleDateFormat("MM/dd/yy");
-
-                HistoryModel model = new HistoryModel();
-                model.setDate(spf.format(new Date()));
-                model.setDistance(formatDistance(mTotalDistance));
-                model.setPath(mLocations);
-
-                // add to local database
-                ContentValues values = new ContentValues();
-                values.put(HistoryTable.COLUMN_DATE, model.getDate());
-                values.put(HistoryTable.COLUMN_DISTANCE, model.getDistance());
-
-                Uri uri = getContentResolver().insert(HistoryContentProvider.CONTENT_URI, values);
-                long id = ContentUris.parseId(uri);
-                model.set_id(id);
-
-                // add to firebase database
-                mHistoryDatabaseReference.child(String.valueOf(id)).setValue(model);
-
-                // reset global variables
-                mSpeedState = SpeedState.LOW;
-                mDistance = 0d;
-                mSpeed = 0d;
-                mStartTime = 0;
-                mTotalDistance = 0d;
-                mFirstLocation = null;
-                mLocations.clear();
-                stopLocationUpdates();
-            }
+            mediaPlayer.prepareAsync();
+            //update UI
+            mPlayText.setText(getResources().getString(R.string.finish_string));
+            mPlayButton.setBackgroundColor(getResources().getColor(R.color.red));
         }
+//
+//        if (mPlayer == null) {
+//            // user is not logged in spotify
+//            mProgressDialog.show();
+//            requestSpotifyLogin();
+//        } else {
+//
+//            Boolean isPlaying = mPlayer.getPlaybackState().isPlaying;
+//
+//            if (!isPlaying) {
+//
+//                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
+//
+//
+//                mPlayText.setText(getResources().getString(R.string.finish_string));
+//                mPlayerWrapper.setVisibility(View.VISIBLE);
+//                mPlayButton.setBackgroundColor(getResources().getColor(R.color.red));
+//                mDistanceWrapper.setVisibility(View.VISIBLE);
+//
+//                startLocationUpdates();
+//            } else {
+//                // finish tracking
+//
+//                mPlayer.pause(new Player.OperationCallback() {
+//                    @Override
+//                    public void onSuccess() {
+//                        //Toast.makeText(MainActivity.this, "Pause success", Toast.LENGTH_SHORT).show();
+//                    }
+//
+//                    @Override
+//                    public void onError(Error error) {
+//                        Toast.makeText(MainActivity.this, getResources().getString(R.string.err_general), Toast.LENGTH_SHORT).show();
+//                    }
+//                });
+//
+//                mPlayerWrapper.setVisibility(View.GONE);
+//                mPlayText.setText(getResources().getString(R.string.start_string));
+//                mPlayButton.setBackgroundColor(getResources().getColor(R.color.green));
+//                mDistanceWrapper.setVisibility(View.GONE);
+//
+//                SimpleDateFormat spf = new SimpleDateFormat("MM/dd/yy");
+//
+//                HistoryModel model = new HistoryModel();
+//                model.setDate(spf.format(new Date()));
+//                model.setDistance(formatDistance(mTotalDistance));
+//                model.setPath(mLocations);
+//
+//                // add to local database
+//                ContentValues values = new ContentValues();
+//                values.put(HistoryTable.COLUMN_DATE, model.getDate());
+//                values.put(HistoryTable.COLUMN_DISTANCE, model.getDistance());
+//
+//                Uri uri = getContentResolver().insert(HistoryContentProvider.CONTENT_URI, values);
+//                long id = ContentUris.parseId(uri);
+//                model.set_id(id);
+//
+//                // add to firebase database
+//                mHistoryDatabaseReference.child(String.valueOf(id)).setValue(model);
+//
+//                // reset global variables
+//                mSpeedState = SpeedState.LOW;
+//                mDistance = 0d;
+//                mSpeed = 0d;
+//                mStartTime = 0;
+//                mTotalDistance = 0d;
+//                mFirstLocation = null;
+//                mLocations.clear();
+//                stopLocationUpdates();
+//            }
+//        }
     }
 
     private void requestSpotifyLogin() {

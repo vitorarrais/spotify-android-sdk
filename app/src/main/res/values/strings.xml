@@ -15,7 +15,7 @@
     <string name="pause_button_description">pause button</string>
     <string name="next_button_description">next button</string>
     <string name="no_history">No history</string>
-    <string name="help_text">Tunerun compass your running\'s intensity with music your\'re listening to. The faster you run the more intense the music you\'re listening to. </string>
+    <string name="help_text">Tunerun compass your pace with the song rhythm. The faster you run the more intense the song you\'re listening to will be. </string>
     <string name="spotify_login_loader_title">Signing in Spotify</string>
     <string name="spotify_login_loader_message">Waiting for listening to music</string>
     <string name="finish_string">Finish</string>

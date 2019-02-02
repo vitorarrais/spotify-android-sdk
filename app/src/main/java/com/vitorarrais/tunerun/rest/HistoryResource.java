@@ -12,7 +12,7 @@ import retrofit2.http.Path;
  * Created by User on 02/12/2016.
  */
 
-public interface HistoryRestInterface {
+public interface HistoryResource {
 
     @GET("/{userId}/history/{id}.json")
     Call<HistoryModel> historyItem(@Path("userId") String userId ,@Path("id") String id);

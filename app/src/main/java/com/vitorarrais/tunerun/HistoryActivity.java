@@ -22,7 +22,7 @@ import com.vitorarrais.tunerun.data.HistoryContentProvider;
 import com.vitorarrais.tunerun.data.HistoryTable;
 import com.vitorarrais.tunerun.data.model.HistoryModel;
 import com.vitorarrais.tunerun.data.model.LocationModel;
-import com.vitorarrais.tunerun.rest.HistoryRestInterface;
+import com.vitorarrais.tunerun.rest.HistoryResource;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,7 +110,7 @@ public class HistoryActivity extends AppCompatActivity implements
 
     private void retrieveDataById(long id) {
         String idString = String.valueOf(id);
-        HistoryRestInterface service = HistoryRestInterface.retrofit.create(HistoryRestInterface.class);
+        HistoryResource service = HistoryResource.retrofit.create(HistoryResource.class);
 
         Call<HistoryModel> call = service.historyItem(mCurrentUserId, idString);
 
