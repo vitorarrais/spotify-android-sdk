@@ -2,6 +2,7 @@ package com.vitorarrais.tunerun;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
+import android.app.ActivityOptions;
 import android.app.ProgressDialog;
 import android.content.ContentUris;
 import android.content.ContentValues;
@@ -12,6 +13,7 @@ import android.location.Location;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -56,6 +58,7 @@ import com.vitorarrais.tunerun.data.HistoryContentProvider;
 import com.vitorarrais.tunerun.data.HistoryTable;
 import com.vitorarrais.tunerun.data.model.HistoryModel;
 import com.vitorarrais.tunerun.data.model.LocationModel;
+import com.vitorarrais.tunerun.rest.NodeServerResource;
 
 import java.io.IOException;
 import java.math.RoundingMode;
@@ -70,9 +73,16 @@ import java.util.List;
 import butterknife.BindView;
 import butterknife.ButterKnife;
 import butterknife.OnClick;
+import retrofit2.Call;
+
+import static com.vitorarrais.tunerun.HistoryActivity.PATH;
 
 public class MainActivity extends AppCompatActivity implements
-        SpotifyPlayer.NotificationCallback, ConnectionStateCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, LocationListener {
+        SpotifyPlayer.NotificationCallback,
+        ConnectionStateCallback,
+        GoogleApiClient.ConnectionCallbacks,
+        GoogleApiClient.OnConnectionFailedListener,
+        LocationListener {
 
 
     // Request code that will be used to verify if the result comes from correct activity
@@ -87,7 +97,7 @@ public class MainActivity extends AppCompatActivity implements
     private static final String CURRENT_USER_ID = "current_user_id";
 
     private static final double LIMIT_VELOCITY = 3.8 * 1d; // meters per second
-    private static final long SPEED_UPDATE_PERIOD = 5000; // milliseconds
+    private static final long SPEED_UPDATE_PERIOD = 2000; // milliseconds
     private static final long ACTIVITY_MIN_DURATION = 60; // seconds
     private static final long ACTIVITY_MIN_DISTANCE = 50; // meters
 
@@ -166,6 +176,17 @@ public class MainActivity extends AppCompatActivity implements
         public void onCompletion(MediaPlayer mp) {
             Toast.makeText(MainActivity.this, "Buffering completed", Toast.LENGTH_SHORT).show();
             mediaPlayer.stop();
+            mediaPlayer.release();
+            mediaPlayer = new MediaPlayer();
+            mediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+
+            try {
+                mediaPlayer.setDataSource(STREAM_URL);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            mediaPlayer.setOnPreparedListener(onPreparedListener);
+            mediaPlayer.setOnCompletionListener(onCompletionListener);
             mediaPlayer.prepareAsync();
         }
     };
@@ -332,6 +353,8 @@ public class MainActivity extends AppCompatActivity implements
     protected void onDestroy() {
         mGoogleApiClient.disconnect();
         Spotify.destroyPlayer(this);
+        mediaPlayer.release();
+        stopLocationUpdates();
         super.onDestroy();
     }
 
@@ -448,24 +471,28 @@ public class MainActivity extends AppCompatActivity implements
     @OnClick(R.id.start_button)
     public void play(View v) {
         v.performHapticFeedback(HapticFeedbackConstants.VIRTUAL_KEY);
-        if (mediaPlayer.isPlaying()){
-            // transition between started and paused may take several
-            //   seconds and occurs asynchronously. In order to use
-            //   pause is necessary to handle this
-            //mediaPlayer.pause();
-            mediaPlayer.stop();
-            // update UI
-            mPlayerWrapper.setVisibility(View.GONE);
-            mPlayText.setText(getResources().getString(R.string.start_string));
-            mPlayButton.setBackgroundColor(getResources().getColor(R.color.green));
-            mDistanceWrapper.setVisibility(View.GONE);
-        } else {
+        if (startLocationUpdates()) {
+            if (mediaPlayer.isPlaying()){
+                // transition between started and paused may take several
+                //   seconds and occurs asynchronously. In order to use
+                //   pause is necessary to handle this
+                //mediaPlayer.pause();
+                mediaPlayer.stop();
+                // update UI
+                mPlayerWrapper.setVisibility(View.GONE);
+                mPlayText.setText(getResources().getString(R.string.start_string));
+                mPlayButton.setBackgroundColor(getResources().getColor(R.color.green));
+                mDistanceWrapper.setVisibility(View.GONE);
+            } else {
+                mediaPlayer.prepareAsync();
+                //update UI
+                mPlayText.setText(getResources().getString(R.string.finish_string));
+                mPlayButton.setBackgroundColor(getResources().getColor(R.color.red));
+                mDistanceWrapper.setVisibility(View.VISIBLE);
 
-            mediaPlayer.prepareAsync();
-            //update UI
-            mPlayText.setText(getResources().getString(R.string.finish_string));
-            mPlayButton.setBackgroundColor(getResources().getColor(R.color.red));
+            }
         }
+
 //
 //        if (mPlayer == null) {
 //            // user is not logged in spotify
@@ -619,26 +646,43 @@ public class MainActivity extends AppCompatActivity implements
     protected void createLocationRequest() {
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(10000);
-        mLocationRequest.setFastestInterval(5000);
+        mLocationRequest.setFastestInterval(2000);
         mLocationRequest.setPriority(LocationRequest.PRIORITY_HIGH_ACCURACY);
     }
 
-    protected void startLocationUpdates() {
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+
+    protected boolean startLocationUpdates() {
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED) {
+
+            Toast.makeText(this, "Fine Location not granted", Toast.LENGTH_SHORT).show();
             mRequestingLocationUpdates = false;
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    2);
+            return false;
         }
+        if (ActivityCompat.checkSelfPermission(
+                this,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED){
+
+            Toast.makeText(this, "Coarse Location not granted", Toast.LENGTH_SHORT).show();
+            mRequestingLocationUpdates = false;
+
+            ActivityCompat.requestPermissions(this,
+                    new String[]{Manifest.permission.ACCESS_COARSE_LOCATION},
+                    3);
+            return false;
+        }
+        Toast.makeText(this, "Location Updates started", Toast.LENGTH_SHORT).show();
         mRequestingLocationUpdates = true;
         LocationServices.FusedLocationApi.requestLocationUpdates(
                 mGoogleApiClient, mLocationRequest, this);
+        return true;
     }
 
     @Override
@@ -718,6 +762,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onLocationChanged(Location location) {
+        Toast.makeText(this, "Location changed", Toast.LENGTH_SHORT).show();
         if (mFirstLocation == null) {
             mFirstLocation = location;
             mLastLocationSpeedUpdate = mFirstLocation;
@@ -739,7 +784,7 @@ public class MainActivity extends AppCompatActivity implements
         mDistance += distance;
         mTotalDistance = mDistance * 0.001d;
 
-        // measure speed every 5 seconds
+        // measure speed every 2 seconds
         long now = Calendar.getInstance().getTimeInMillis();
         long difference = now - mLastSpeedUpdateTime;
 
@@ -750,13 +795,17 @@ public class MainActivity extends AppCompatActivity implements
 
             mSpeed = deltaDistance / (double) (deltaTime * 1000d);
 
-            if (mSpeed > LIMIT_VELOCITY && mSpeedState == SpeedState.LOW) {
-                mSpeedState = SpeedState.HIGH;
-                mPlayer.playUri(null, mHighSpeedPlaylist, 0, 0);
-            } else if (mSpeed < LIMIT_VELOCITY && mSpeedState == SpeedState.HIGH) {
-                mSpeedState = SpeedState.LOW;
-                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
-            }
+            NodeServerResource service = NodeServerResource.retrofit.create(NodeServerResource.class);
+            Call<Void> call = service.updateSpeed(Double.valueOf(mSpeed).intValue());
+            new updateSpeedTask().execute(call);
+
+//            if (mSpeed > LIMIT_VELOCITY && mSpeedState == SpeedState.LOW) {
+//                mSpeedState = SpeedState.HIGH;
+//                mPlayer.playUri(null, mHighSpeedPlaylist, 0, 0);
+//            } else if (mSpeed < LIMIT_VELOCITY && mSpeedState == SpeedState.HIGH) {
+//                mSpeedState = SpeedState.LOW;
+//                mPlayer.playUri(null, mLowSpeedPlaylist, 0, 0);
+//            }
         }
 
         updateDistanceUi();
@@ -792,5 +841,22 @@ public class MainActivity extends AppCompatActivity implements
             LocationServices.FusedLocationApi.removeLocationUpdates(
                     mGoogleApiClient, this);
         }
+    }
+
+
+    private class updateSpeedTask extends AsyncTask<Call, Void, Void> {
+
+
+        @Override
+        protected Void doInBackground(Call... calls) {
+            Call call = calls[0];
+            try {
+                call.execute();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            return null;
+        }
+
     }
 }

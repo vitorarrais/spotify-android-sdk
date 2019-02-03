@@ -10,8 +10,8 @@ import retrofit2.http.Query;
 
 public interface NodeServerResource {
 
-    @GET("/speed")
-    Call<HistoryModel> historyItem(
+    @GET("/api/music/ai/speed")
+    Call<Void> updateSpeed(
             @Query("val") int speed
     );
 
